@@ -2,8 +2,8 @@
   <v-app>
     <v-toolbar app>
       <v-toolbar-title class="headline text-uppercase">
-        <span>Vuetify</span>
-        <span class="font-weight-light">MATERIAL DESIGN</span>
+        <span>Hotround </span>
+        <span class="font-weight-light">scoring and courses</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn
@@ -16,18 +16,18 @@
     </v-toolbar>
 
     <v-content>
-      <HelloWorld/>
+      <KonvaTest/>
     </v-content>
   </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
+import KonvaTest from './components/KonvaTest'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    KonvaTest
   },
   data () {
     return {
