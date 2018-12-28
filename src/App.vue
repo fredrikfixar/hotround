@@ -16,18 +16,18 @@
     </v-toolbar>
 
     <v-content>
-      <KonvaTest/>
+      <KonvaCurveTest/>
     </v-content>
   </v-app>
 </template>
 
 <script>
-import KonvaTest from './components/KonvaTest'
+import KonvaCurveTest from './components/KonvaCurveTest'
 
 export default {
   name: 'App',
   components: {
-    KonvaTest
+    KonvaCurveTest
   },
   data () {
     return {
