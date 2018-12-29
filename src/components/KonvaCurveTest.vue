@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-stage ref="stage"
+    <v-stage @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove" ref="stage"
       :config="configKonva"
       @dragstart="handleDragstart"
       @dragend="handleDragend">
@@ -19,6 +19,27 @@
 
       </v-layer>
       <v-layer ref="anchorLayer"></v-layer>
+      <v-layer ref="drawLayer">
+        <v-path name="path" v-bind:points="drawPoints" :x="drawStartX" :y="drawStartY" :config="{
+          tension: 0.5,
+          closed: false,
+          stroke: 'black',
+          fillLinearGradientStartPoint: { x: -50, y: -50 },
+          fillLinearGradientEndPoint: { x: 50, y: 50 },
+          fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
+        }"/>
+        <!-- <v-image
+          name = "drawImage"
+          :x="windowWidth"
+          :y="windowHeigth"
+          :image="canvas"
+          :config="{
+          stroke: 'green',
+          shadowBlur: 5
+          }">
+
+        </v-image> -->
+      </v-layer>
       
 
     </v-stage>
@@ -37,7 +58,12 @@ export default {
         width: width,
         height: height
       },
-      list: [0, 0, 100, 0, 100, 100]  
+      list: [0, 0, 100, 0, 100, 100],
+      drawList: [], 
+      //canvas: document.createElement('canvas'),
+      isPaint: Boolean,
+      drawStartX: Number,
+      drawStartY: Number,
       
 
     };
@@ -47,13 +73,56 @@ export default {
   },
   computed: {
     pathPoints: function () {
-      // `this` points to the vm instance
       return this.list
+    },
+    drawPoints: function () {
+      return this.drawList
+    },
+    windowWidth: function () {
+      return this.configKonva.width
+    },
+    windowHeigth: function () {
+      return this.configKonva.height
     }
+    // image: function () {
+    //   return document.getElementById("drawImage")
+    // },
+    // context: function () {
+    //   return this.canvas.getContext('2d')
+    // }
   },
   beforeMount() {
+    this.isPaint = false;
+
   },
   methods: {
+    mouseMove(e) {
+      if (this.isPaint == false) {
+        return
+      }
+      var x = e.evt.pageX
+      var y = e.evt.pageY
+      this.drawList.push(x-this.drawStartX)
+      this.drawList.push(y-this.drawStartY)
+    },
+    mouseDown(e) {
+      var x = e.evt.pageX
+      var y = e.evt.pageY
+      
+      if (this.isPaint == false) {
+        this.drawList = []
+        this.drawStartX = x
+        this.drawStartY = y
+      }
+      this.drawList.push(0)
+      this.drawList.push(0)
+      this.isPaint = true;
+
+    },
+    mouseUp(e) {
+      this.isPaint = false;
+      console.log(this.drawPoints)
+    },
     handleDragstart(e) {
       const shape = e.target;
       const dragLayer = vm.$refs.dragLayer.getNode();
@@ -108,29 +177,6 @@ export default {
   },
   mounted() {
     vm = this;
-    // for (let n = 0; n < 30; n++) {
-    //   const scale = Math.random();
-    //   const stage = vm.$refs.stage.getStage();
-    //   vm.list.push({
-    //     x: Math.random() * stage.getWidth(),
-    //     y: Math.random() * stage.getHeight(),
-    //     rotation: Math.random() * 180,
-    //     numPoints: 5,
-    //     innerRadius: 30,
-    //     outerRadius: 50,
-    //     fill: '#89b717',
-    //     opacity: 0.8,
-    //     draggable: true,
-    //     scaleX: scale,
-    //     scaleY: scale,
-    //     shadowColor: 'black',
-    //     shadowBlur: 10,
-    //     shadowOffsetX: 5,
-    //     shadowOffsetY: 5,
-    //     shadowOpacity: 0.6,
-    //     startScale: scale
-    //   });
-    // }
   }
-};
+}
 </script>
