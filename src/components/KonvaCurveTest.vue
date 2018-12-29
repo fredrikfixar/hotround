@@ -20,7 +20,7 @@
       </v-layer>
       <v-layer ref="anchorLayer"></v-layer>
       <v-layer ref="drawLayer">
-        <v-path name="path" v-bind:points="drawPoints" :x="drawStartX" :y="drawStartY" :config="{
+        <v-path v-bind:data="drawPath" :config="{
           tension: 0.5,
           closed: false,
           stroke: 'black',
@@ -47,6 +47,8 @@
 </template>
 
 <script>
+import {toPath} from 'svg-points'
+
 const width = window.innerWidth;
 const height = window.innerHeight;
 let vm = {};
@@ -59,11 +61,10 @@ export default {
         height: height
       },
       list: [0, 0, 100, 0, 100, 100],
-      drawList: [], 
+      shape: [], 
       //canvas: document.createElement('canvas'),
       isPaint: Boolean,
-      drawStartX: Number,
-      drawStartY: Number,
+      path: String
       
 
     };
@@ -75,8 +76,8 @@ export default {
     pathPoints: function () {
       return this.list
     },
-    drawPoints: function () {
-      return this.drawList
+    drawPath: function () {
+      return this.path
     },
     windowWidth: function () {
       return this.configKonva.width
@@ -93,6 +94,7 @@ export default {
   },
   beforeMount() {
     this.isPaint = false;
+    this.path = ""
 
   },
   methods: {
@@ -100,28 +102,26 @@ export default {
       if (this.isPaint == false) {
         return
       }
-      var x = e.evt.pageX
-      var y = e.evt.pageY
-      this.drawList.push(x-this.drawStartX)
-      this.drawList.push(y-this.drawStartY)
+      var x = e.evt.offsetX
+      var y = e.evt.offsetY
+      
+      this.shape.push( {x: x, y: y} )
+      
+      this.path = toPath(this.shape)
     },
     mouseDown(e) {
-      var x = e.evt.pageX
-      var y = e.evt.pageY
+      var x = e.evt.offsetX
+      var y = e.evt.offsetY
       
       if (this.isPaint == false) {
-        this.drawList = []
-        this.drawStartX = x
-        this.drawStartY = y
+        this.shape = []
       }
-      this.drawList.push(0)
-      this.drawList.push(0)
+      this.shape.push( {x: x, y: y} )
       this.isPaint = true;
 
     },
     mouseUp(e) {
       this.isPaint = false;
-      console.log(this.drawPoints)
     },
     handleDragstart(e) {
       const shape = e.target;
