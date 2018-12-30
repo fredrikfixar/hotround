@@ -24,6 +24,7 @@
           tension: 0.5,
           closed: false,
           stroke: 'black',
+          fill: 'orange',
           fillLinearGradientStartPoint: { x: -50, y: -50 },
           fillLinearGradientEndPoint: { x: 50, y: 50 },
           fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
@@ -48,6 +49,7 @@
 
 <script>
 import {toPath} from 'svg-points'
+import {getCurvePoints} from 'cardinal-spline-js'
 
 const width = window.innerWidth;
 const height = window.innerHeight;
@@ -61,10 +63,17 @@ export default {
         height: height
       },
       list: [0, 0, 100, 0, 100, 100],
-      shape: [], 
+      shape: [],
+      points: [],
       //canvas: document.createElement('canvas'),
       isPaint: Boolean,
-      path: String
+      path: String,
+      prevX: 0,
+      prevY: 0,
+      prevX2: 0,
+      prevY2: 0,
+      count: 0
+
       
 
     };
@@ -102,12 +111,31 @@ export default {
       if (this.isPaint == false) {
         return
       }
-      var x = e.evt.offsetX
-      var y = e.evt.offsetY
+
+      if (this.count%10 == 0) {
+        var x = e.evt.offsetX
+        var y = e.evt.offsetY
+        this.points.push(x)
+        this.points.push(y)
+        this.shape.push( {x: x, y: y, curve: { type: 'cubic', x2: x , y2: y, x1: x , y1: y }} )
+        this.prevX2 = this.prevX
+        this.prevY2 = this.prevY
+        this.prevX = x
+        this.prevY = y
+        this.count = 0
+      }
+      this.count = this.count + 1
       
-      this.shape.push( {x: x, y: y} )
       
-      this.path = toPath(this.shape)
+      var tmpPoints = getCurvePoints(this.points,1, 25, true)
+      var arrayLength = tmpPoints.length*0.5
+      var tmpShape = []
+      for (var i = 0; i < arrayLength; ++i) {
+        tmpShape.push( {x: tmpPoints[i*2], y: tmpPoints[i*2 +1] })
+      }
+      
+      this.path = toPath(tmpShape)
+      console.log(this.path)
     },
     mouseDown(e) {
       var x = e.evt.offsetX
@@ -116,7 +144,13 @@ export default {
       if (this.isPaint == false) {
         this.shape = []
       }
-      this.shape.push( {x: x, y: y} )
+      this.prevX = x
+      this.prevY = y
+      this.prevX2 = this.prevX
+      this.prevY2 = this.prevY
+      this.points.push(x)
+      this.points.push(y)
+      this.shape.push( {x:  x, y: y, curve: { type: 'cubic', x1: this.prevX , y1: this.prevY, x2: this.prevX2 , y2:this.prevY2 }} )
       this.isPaint = true;
 
     },
