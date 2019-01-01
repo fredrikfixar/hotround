@@ -2,8 +2,27 @@
   <div>
     <v-stage @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove" ref="stage"
       :config="configKonva"
-      @dragstart="handleDragstart"
-      @dragend="handleDragend">
+      >
+
+      <v-layer ref="anchorLayer"></v-layer>
+      <v-layer ref="layer">
+        <v-circle
+          v-for="item in draggablePoints"
+          :key="item.id"
+          :config="item"></v-circle>
+      </v-layer>
+
+      <v-layer  ref="drawLayer">
+        <v-path 
+          v-for="p in paths"
+          :data="p"
+          :config="{ tension: 0.5, closed: false, stroke: 'black',
+          fill: 'pink',
+          fillLinearGradientStartPoint: { x: -50, y: -50 },
+          fillLinearGradientEndPoint: { x: 50, y: 50 },
+          fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
+        }"></v-path>
+      </v-layer>
       <v-layer ref="curveLayer"></v-layer>
       <v-layer ref="lineLayer">
         <v-line v-bind:points="pathPoints" :config="{
@@ -18,36 +37,6 @@
         }"/>
 
       </v-layer>
-      <v-layer ref="anchorLayer"></v-layer>
-      <v-layer ref="layer">
-        <v-circle
-          v-for="item in draggablePoints"
-          :key="item.id"
-          :config="item"></v-circle>
-      </v-layer>
-      <v-layer ref="drawLayer">
-        <v-path v-bind:data="drawPath" :config="{
-          tension: 0.5,
-          closed: false,
-          stroke: 'black',
-          fill: 'pink',
-          fillLinearGradientStartPoint: { x: -50, y: -50 },
-          fillLinearGradientEndPoint: { x: 50, y: 50 },
-          fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
-        }"/>
-        <!-- <v-image
-          name = "drawImage"
-          :x="windowWidth"
-          :y="windowHeigth"
-          :image="canvas"
-          :config="{
-          stroke: 'green',
-          shadowBlur: 5
-          }">
-
-        </v-image> -->
-      </v-layer>
-      
 
     </v-stage>
   </div>
@@ -71,16 +60,13 @@ export default {
       list: [0, 0, 100, 0, 100, 100],
       draggablePoints: [],
       shape: [],
+      objects: [],
       points: [],
       collectedDrawPoints: [],
+      nextPointDir: [],
       //canvas: document.createElement('canvas'),
       isPaint: Boolean,
-      path: String,
-      prevX: 0,
-      prevY: 0,
-      prevX2: 0,
-      prevY2: 0,
-      count: 0
+      paths: [],
 
       
 
@@ -92,9 +78,6 @@ export default {
   computed: {
     pathPoints: function () {
       return this.list
-    },
-    drawPath: function () {
-      return this.path
     },
     windowWidth: function () {
       return this.configKonva.width
@@ -111,7 +94,7 @@ export default {
   },
   beforeMount() {
     this.isPaint = false;
-    this.path = ""
+    this.paths = []
 
   },
   methods: {
@@ -153,11 +136,11 @@ export default {
         return vec2Normal;
     },
 
-    calculateRoatationAngleRelWorldX(vec2)
+    calculateRoatationAngleRelWorldX(dir)
     {
-        var vec2Normal = this.normalize(vec2);
+        var dirNormal = this.normalize(dir);
         // dot(A, [1,0]) = reduces to A[0]
-        var dotProd = vec2Normal[0];
+        var dotProd = dirNormal[0];
         if ( dotProd < -1.0 )
         {
             dotProd = -1.0;
@@ -168,7 +151,7 @@ export default {
         }
         var angle = Math.acos(dotProd);
         // cross([1,0,0] * [vec2Normal[0], vec2Normal[1], 0] reduces to -vec2Normal[1]
-        var crossNormalSign = -vec2Normal[1];
+        var crossNormalSign = -dirNormal[1];
         if ( crossNormalSign < 0 )
         {
             angle = angle * -1.0;
@@ -180,8 +163,11 @@ export default {
         var curvatureCutOff = 30;
         return curvatureCutOff;
     },
+    relVec2( v1,v2) {
+      return [v2[0] - v1[0],v2[1] - v1[1]]
+    },
     distance( v1, v2 ) {
-      var vec2 = [v2[0] - v1[0],v2[1] - v1[1]]
+      var vec2 = this.relVec2(v1,v2)
       return this.length(vec2)
     },
     verifyLastDrawPoint() {
@@ -191,19 +177,27 @@ export default {
       }
       var width = this.windowWidth;  
       const pointsLength = this.points.length
-      // uAxis is local coordinate system x-axis
-      var uAxis = [0,0];
-      uAxis[0] = this.collectedDrawPoints[numCollectedPoints-1][0] - this.points[pointsLength-2];
-      uAxis[1] = this.collectedDrawPoints[numCollectedPoints-1][1] - this.points[pointsLength-1];
+      // // uAxis is local coordinate system x-axis
+      // var uAxis = [0,0];
+      // uAxis[0] = this.collectedDrawPoints[numCollectedPoints-1][0] - this.points[pointsLength-2];
+      // uAxis[1] = this.collectedDrawPoints[numCollectedPoints-1][1] - this.points[pointsLength-1];
       var previousPoint = [this.points[pointsLength-2],this.points[pointsLength-1]];
       var potentialNewPoint = this.collectedDrawPoints[numCollectedPoints-1]
 
-      if (this.distance( previousPoint, potentialNewPoint ) < this.calculateCurvatureCutOff()) {
+      var dir = this.relVec2(potentialNewPoint, previousPoint)
+
+      if (this.length(dir) < this.calculateCurvatureCutOff()) {
+        return false
+      }
+      if (this.length(this.nextPointDir))
+      {
+        // When we are outside the cut off distance, we assume a direction
+        this.nextPointDir = this.normalize(dir)
         return false
       }
 
-      //find angle between uAxis and worldFrame x-axis
-      var angle = this.calculateRoatationAngleRelWorldX( uAxis);
+      //find angle between dir (local x axis) and worldFrame x-axis
+      var angle = this.calculateRoatationAngleRelWorldX( dir );
       var maxHeight = 0;
       for ( var i = 1; i < numCollectedPoints; ++i )
       {
@@ -231,10 +225,7 @@ export default {
       this.points.push(x)
       this.points.push(y)
       this.shape.push( {x: x, y: y} )
-      this.prevX2 = this.prevX
-      this.prevY2 = this.prevY
-      this.prevX = x
-      this.prevY = y
+      this.nextPointDir = []
 
       this.draggablePoints.push({
         x: x,
@@ -265,9 +256,9 @@ export default {
 
       if (this.verifyLastDrawPoint()) {
         this.addPoint(e, x, y)
-        this.count = 0
+        
         this.collectedDrawPoints = []
-      }      
+      }
       
       var tmpPoints = getCurvePoints(this.points,0.5, 25, true)
       var arrayLength = tmpPoints.length*0.5
@@ -276,10 +267,27 @@ export default {
         tmpShape.push( {x: tmpPoints[i*2], y: tmpPoints[i*2 +1] })
       }
 
-      this.path = toPath(tmpShape)
-
+      this.paths[this.paths.length - 1] = toPath(tmpShape)
+      //console.log(this.paths)
     },
     mouseDown(e) {
+      console.log(e.target.nodeType)
+
+      if (e.target.nodeType != "Stage") {
+        return
+      }
+
+
+      if (this.points.length > 3) {
+        // save the last points list
+        this.objects.push(this.points)
+      }
+      else {
+        this.paths.pop()
+      }
+      this.paths.push("")
+
+
       this.isPaint = true;
       var x = e.evt.offsetX
       var y = e.evt.offsetY
@@ -287,14 +295,15 @@ export default {
       // Clear current shape
       this.points = []
       this.draggablePoints = []
-      this.prevX = x
-      this.prevY = y
-      this.addPoint(e, x, y)
+      this.collectedDrawPoints = []
 
+      this.addPoint(e, x, y)
+      
 
     },
     mouseUp(e) {
       this.isPaint = false;
+
     },
     handleDragstart(e) {
       const shape = e.target;
