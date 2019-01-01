@@ -29,7 +29,6 @@
 import {toPath} from 'svg-points'
 import {getCurvePoints} from 'cardinal-spline-js'
 import CircleDragLayer from './CircleDragLayer.vue'
-import DragCircle from './DragCircle.vue'
 import PathLayer from './PathLayer.vue'
 
 const width = window.innerWidth;
@@ -201,10 +200,6 @@ export default {
           
           if ( height > this.calculateCurvatureCutOff() )
           {
-            console.log("previousPoint")
-            console.log(previousPoint)
-            console.log("this.collectedDrawPoints[i]")
-            console.log(this.collectedDrawPoints[i])
               return true
           }
       }
@@ -252,15 +247,23 @@ export default {
       for (var i = 0; i < arrayLength; ++i) {
         tmpShape.push( {x: tmpPoints[i*2], y: tmpPoints[i*2 +1] })
       }
-
+      
       this.paths[this.paths.length - 1] = toPath(tmpShape)
+      // update in ugly reactive way
+      this.paths.push("")
+      this.paths.pop()
     },
     updatePathFromCircle(e) {
+      if (e.target.VueComponent == null || e.target.attrs.x == null) {
+        return 
+      }
       this.updatePoint(e.target.VueComponent.$parent.circleId,e.target.attrs.x, e.target.attrs.y)
       //Updating the last path
       this.updateCurve()
     },
     mouseMove(e) {
+      this.updatePathFromCircle(e)
+      
       if (this.isPaint == false) {
         return
       }
@@ -280,9 +283,6 @@ export default {
     mouseDown(e) {
 
       if (e.target.nodeType != "Stage") {
-        if (e.target.className == "Circle" ) {
-          this.updatePathFromCircle(e)
-        }
         return
       }
 
@@ -294,6 +294,7 @@ export default {
       else {
         this.paths.pop()
       }
+      // push the next path to be drawn
       this.paths.push("")
 
 
@@ -304,7 +305,7 @@ export default {
       // Clear current shape
       this.points = []
       this.draggablePoints = []
-      this.collectedDrawPoints = []
+      
 
       this.addPoint(e, x, y)
       
@@ -312,6 +313,7 @@ export default {
     },
     mouseUp(e) {
       this.isPaint = false;
+      this.collectedDrawPoints = []
 
     },
     handleDragstart(e) {
