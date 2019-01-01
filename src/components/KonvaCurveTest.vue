@@ -1,29 +1,10 @@
 <template>
   <div>
-    <v-stage @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove" ref="stage"
+    <v-stage @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove" @dragend="updatePathFromCircle" ref="stage"
       :config="configKonva"
       >
+      <PathLayer :paths="paths" />
 
-      <v-layer ref="anchorLayer"></v-layer>
-      <v-layer ref="layer">
-        <v-circle
-          v-for="item in draggablePoints"
-          :key="item.id"
-          :config="item"></v-circle>
-      </v-layer>
-
-      <v-layer  ref="drawLayer">
-        <v-path 
-          v-for="p in paths"
-          :data="p"
-          :config="{ tension: 0.5, closed: false, stroke: 'black',
-          fill: 'pink',
-          fillLinearGradientStartPoint: { x: -50, y: -50 },
-          fillLinearGradientEndPoint: { x: 50, y: 50 },
-          fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
-        }"></v-path>
-      </v-layer>
-      <v-layer ref="curveLayer"></v-layer>
       <v-layer ref="lineLayer">
         <v-line v-bind:points="pathPoints" :config="{
           x: 20,
@@ -38,6 +19,8 @@
 
       </v-layer>
 
+      <CircleDragLayer :draggablePoints="draggablePoints" />
+
     </v-stage>
   </div>
 </template>
@@ -45,12 +28,19 @@
 <script>
 import {toPath} from 'svg-points'
 import {getCurvePoints} from 'cardinal-spline-js'
+import CircleDragLayer from './CircleDragLayer.vue'
+import DragCircle from './DragCircle.vue'
+import PathLayer from './PathLayer.vue'
 
 const width = window.innerWidth;
 const height = window.innerHeight;
 let vm = {};
 export default {
-  name: 'CanvasWithCurve',
+  name: 'KonvaCurveTest',
+  components: {
+    CircleDragLayer,
+    PathLayer
+  },
   data() {
     return {
       configKonva: {
@@ -222,14 +212,13 @@ export default {
       return false;
     },
     addPoint(e, x, y) {
-      this.points.push(x)
-      this.points.push(y)
-      this.shape.push( {x: x, y: y} )
+      //this.shape.push( {x: x, y: y} )
       this.nextPointDir = []
 
       this.draggablePoints.push({
         x: x,
         y: y,
+        circleData: {
         radius: 20,
         outerRadius: 50,
         fill: '#89b717',
@@ -243,8 +232,33 @@ export default {
         shadowOffsetY: 5,
         shadowOpacity: 0.6,
         startScale: 1
+        }
       });
 
+      this.points.push(this.draggablePoints[this.draggablePoints.length-1].x)
+      this.points.push(this.draggablePoints[this.draggablePoints.length-1].y)
+
+    },
+    updatePoint(circleId, x, y) {
+      this.points[circleId*2] = x
+      this.points[circleId*2 + 1] = y
+      this.draggablePoints[circleId].x = x
+      this.draggablePoints[circleId].y = y
+    },
+    updateCurve() {
+      var tmpPoints = getCurvePoints(this.points,0.5, 25, true)
+      var arrayLength = tmpPoints.length*0.5
+      var tmpShape = []
+      for (var i = 0; i < arrayLength; ++i) {
+        tmpShape.push( {x: tmpPoints[i*2], y: tmpPoints[i*2 +1] })
+      }
+
+      this.paths[this.paths.length - 1] = toPath(tmpShape)
+    },
+    updatePathFromCircle(e) {
+      this.updatePoint(e.target.VueComponent.$parent.circleId,e.target.attrs.x, e.target.attrs.y)
+      //Updating the last path
+      this.updateCurve()
     },
     mouseMove(e) {
       if (this.isPaint == false) {
@@ -260,20 +274,15 @@ export default {
         this.collectedDrawPoints = []
       }
       
-      var tmpPoints = getCurvePoints(this.points,0.5, 25, true)
-      var arrayLength = tmpPoints.length*0.5
-      var tmpShape = []
-      for (var i = 0; i < arrayLength; ++i) {
-        tmpShape.push( {x: tmpPoints[i*2], y: tmpPoints[i*2 +1] })
-      }
-
-      this.paths[this.paths.length - 1] = toPath(tmpShape)
+      this.updateCurve()
       //console.log(this.paths)
     },
     mouseDown(e) {
-      console.log(e.target.nodeType)
 
       if (e.target.nodeType != "Stage") {
+        if (e.target.className == "Circle" ) {
+          this.updatePathFromCircle(e)
+        }
         return
       }
 
