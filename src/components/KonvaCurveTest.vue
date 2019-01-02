@@ -4,7 +4,7 @@
       :config="configKonva"
       >
       <v-layer ref="drawLayer">
-        <ClosedPath :path="currentPath" :config="pathConfig" />
+        <ClosedPath :path="currentPath" :pathId="selectedPathId" :config="pathConfig" />
       </v-layer>
       <PathLayer :objects="objects" :pathConfig="pathConfig" />
 
@@ -245,6 +245,8 @@ export default {
 
     },
     updatePoint(circleId, x, y) {
+      console.log(this.points[circleId*2])
+      console.log(x)
       this.points[circleId*2] = x
       this.points[circleId*2 + 1] = y
       this.draggablePoints[circleId].x = x
@@ -257,7 +259,7 @@ export default {
       for (var i = 0; i < arrayLength; ++i) {
         tmpShape.push( {x: tmpPoints[i*2], y: tmpPoints[i*2 +1] })
       }
-
+      console.log("updating the current path")
       this.currentPath = toPath(tmpShape)
 
 
@@ -266,12 +268,7 @@ export default {
       console.log("drag end with seleced path id:")
       console.log(this.selectedPathId)
 
-      if (e.target.VueComponent == null || e.target.attrs.x == null) {
-        return 
-      }
-      this.updatePoint(e.target.VueComponent.$parent.circleId,e.target.attrs.x, e.target.attrs.y)
-      //Updating the last path
-      this.updateCurve()
+
     },
     mouseMove(e) {
       
@@ -312,12 +309,12 @@ export default {
 
     },
     clearCurrentTempPath() {
-      //this.currentPath = ""
+      this.currentPath = ""
       this.draggablePoints = []
       this.points = []
     },
     mouseUp(e) {
-      
+      console.log("Mouse up")
       this.collectedDrawPoints = []
       console.log(this.selectedPathId)
       if (this.points.length > 3 && this.selectedPathId < 0) {
@@ -325,11 +322,19 @@ export default {
         this.objects.push( { draggablePoints: this.draggablePoints.slice(), points: this.points.slice(), path: this.currentPath.slice()})
       }
       if (this.selectedPathId >= 0) {
-        this.updateCurve()
-        this.objects[this.selectedPathId].points = this.points.slice()
-        this.objects[this.selectedPathId].path = this.currentPath.slice()
-        this.objects[this.selectedPathId].draggablePoints = this.draggablePoints.slice()
-
+        if (e.target.VueComponent != null && e.target.attrs.x != null) {
+          console.log("update point for path:")
+          console.log(this.selectedPathId)
+          this.updatePoint(e.target.VueComponent.$parent.circleId,e.target.attrs.x, e.target.attrs.y)
+          //Updating the last path
+          this.updateCurve()
+          console.log("copy current path to store")
+          this.objects[this.selectedPathId].points = this.points.slice()
+          this.objects[this.selectedPathId].path = this.currentPath.slice()
+          this.objects[this.selectedPathId].draggablePoints = this.draggablePoints.slice()
+          this.objects.push({})
+          this.objects.pop()
+        }
       }
       if (this.isPaint == true) {
         this.clearCurrentTempPath()
