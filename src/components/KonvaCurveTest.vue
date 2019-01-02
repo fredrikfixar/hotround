@@ -1,12 +1,13 @@
 <template>
   <div>
-    <v-stage @click="selectPath" @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove" @dragend="updatePathFromCircle" ref="stage"
+    <v-stage @click="selectPath" @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove"  ref="stage"
       :config="configKonva"
       >
-      <v-layer ref="drawLayer">
-        <ClosedPath :path="currentPath" :pathId="selectedPathId" :config="pathConfig" />
-      </v-layer>
-      <PathLayer :objects="objects" :pathConfig="pathConfig" />
+      
+      <!-- <v-layer ref="drawLayer">
+        <ClosedPath :path="currentPath" :pathId="selectedPathId" :config="pathConfig" :updateVar="updateVar" />
+      </v-layer> -->
+      <PathLayer :objects="objects" :pathConfig="pathConfig" :key="updateVar"/>
 
       <v-layer ref="lineLayer">
         <v-line v-bind:points="pathPoints" :config="{
@@ -21,8 +22,8 @@
         }"/>
 
       </v-layer>
-
       <CircleDragLayer :draggablePoints="draggablePoints" />
+
 
     </v-stage>
   </div>
@@ -61,6 +62,7 @@ export default {
       isPaint: Boolean,
       currentPath: "",
       selectedPathId: -1,
+      updateVar: 0,
       pathConfig: { tension: 0.5, closed: false, stroke: 'black',
           fill: 'brown',
           fillLinearGradientStartPoint: { x: -50, y: -50 },
@@ -319,7 +321,7 @@ export default {
       console.log(this.selectedPathId)
       if (this.points.length > 3 && this.selectedPathId < 0) {
         // save the last points list
-        this.objects.push( { draggablePoints: this.draggablePoints.slice(), points: this.points.slice(), path: this.currentPath.slice()})
+        this.objects.push( { draggablePoints: this.draggablePoints, points: this.points, path: this.currentPath})
       }
       if (this.selectedPathId >= 0) {
         if (e.target.VueComponent != null && e.target.attrs.x != null) {
@@ -329,11 +331,10 @@ export default {
           //Updating the last path
           this.updateCurve()
           console.log("copy current path to store")
-          this.objects[this.selectedPathId].points = this.points.slice()
+          // this.objects[this.selectedPathId].points = this.points.slice()
           this.objects[this.selectedPathId].path = this.currentPath.slice()
-          this.objects[this.selectedPathId].draggablePoints = this.draggablePoints.slice()
-          this.objects.push({})
-          this.objects.pop()
+          // this.objects[this.selectedPathId].draggablePoints = this.draggablePoints.slice()
+          this.updateVar = this.updateVar + 1
         }
       }
       if (this.isPaint == true) {

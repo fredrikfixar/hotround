@@ -1,11 +1,14 @@
 <template>
   
-      <v-layer  ref="drawLayer">
+      <v-layer :zIndex=0 ref="drawLayer">
         <ClosedPath 
           v-for="(o, index) in objects"
           :path="o.path"
           :pathId="index"
-          :config="pathConfig"></ClosedPath>
+          :config="pathConfig"
+          
+          :key="index">
+          </ClosedPath>
       </v-layer>
 
 </template>
@@ -26,7 +29,7 @@ export default {
   },
   props: {
      objects: Array,
-     pathConfig: {}
+     pathConfig: {},
   },
   computed: {
 

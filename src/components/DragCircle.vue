@@ -2,7 +2,10 @@
     <v-circle
       :x="x"
       :y="y"
-      :config="circleData"></v-circle>
+      :zIndex=1
+      :config="circleData">
+      :key="x"
+      </v-circle>
 
 </template>
 

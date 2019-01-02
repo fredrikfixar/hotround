@@ -1,8 +1,11 @@
 <template>
   <v-path 
     
-    :data="path"
-    :config="config"></v-path>
+    :data="computedPath"
+    :config="config"
+    :key="path"
+
+    ></v-path>
 
 </template>
 
@@ -22,7 +25,10 @@ export default {
      config: {}
   },
   computed: {
-
+    computedPath: function() {
+      console.log(this.path)
+      return this.path
+    }
   },
   beforeMount() {
 
