@@ -18,6 +18,7 @@ export default {
   },
   props: {
      path: String,
+     pathId: Number,
      config: {}
   },
   computed: {

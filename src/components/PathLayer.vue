@@ -2,8 +2,9 @@
   
       <v-layer  ref="drawLayer">
         <ClosedPath 
-          v-for="p in paths"
+          v-for="(p, index) in paths"
           :path="p"
+          :pathId="index"
           :config="{ tension: 0.5, closed: false, stroke: 'black',
           fill: 'pink',
           fillLinearGradientStartPoint: { x: -50, y: -50 },

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-stage @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove" @dragend="updatePathFromCircle" ref="stage"
+    <v-stage @click="selectPath" @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove" @dragend="updatePathFromCircle" ref="stage"
       :config="configKonva"
       >
       <PathLayer :paths="paths" />
@@ -56,6 +56,7 @@ export default {
       //canvas: document.createElement('canvas'),
       isPaint: Boolean,
       paths: [],
+      selectedPath: -1
 
       
 
@@ -247,11 +248,12 @@ export default {
       for (var i = 0; i < arrayLength; ++i) {
         tmpShape.push( {x: tmpPoints[i*2], y: tmpPoints[i*2 +1] })
       }
-      
-      this.paths[this.paths.length - 1] = toPath(tmpShape)
-      // update in ugly reactive way
-      this.paths.push("")
-      this.paths.pop()
+      if (this.selectedPath >= 0) {
+        this.paths[this.selectedPath] = toPath(tmpShape)
+        // update in ugly reactive way
+        this.paths.push("")
+        this.paths.pop()
+      }
     },
     updatePathFromCircle(e) {
       if (e.target.VueComponent == null || e.target.attrs.x == null) {
@@ -293,9 +295,11 @@ export default {
       }
       else {
         this.paths.pop()
+        this.selectedPath = -1
       }
       // push the next path to be drawn
       this.paths.push("")
+      this.selectedPath = this.paths.length - 1
 
 
       this.isPaint = true;
@@ -315,6 +319,17 @@ export default {
       this.isPaint = false;
       this.collectedDrawPoints = []
 
+    },
+    createCircles() {
+
+    },
+    selectPath(e) {
+      console.log(e.target)
+      if (e.target.VueComponent == null) {
+        return 
+      }
+      this.selectedPath = e.target.VueComponent.$parent.pathId
+      console.log(this.selectedPath)
     },
     handleDragstart(e) {
       const shape = e.target;
