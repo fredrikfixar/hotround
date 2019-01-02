@@ -3,7 +3,10 @@
     <v-stage @click="selectPath" @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove" @dragend="updatePathFromCircle" ref="stage"
       :config="configKonva"
       >
-      <PathLayer :paths="paths" />
+      <v-layer ref="drawLayer">
+        <ClosedPath :path="currentPath" :config="pathConfig" />
+      </v-layer>
+      <PathLayer :objects="objects" :pathConfig="pathConfig" />
 
       <v-layer ref="lineLayer">
         <v-line v-bind:points="pathPoints" :config="{
@@ -30,6 +33,7 @@ import {toPath} from 'svg-points'
 import {getCurvePoints} from 'cardinal-spline-js'
 import CircleDragLayer from './CircleDragLayer.vue'
 import PathLayer from './PathLayer.vue'
+import ClosedPath from './ClosedPath.vue'
 
 const width = window.innerWidth;
 const height = window.innerHeight;
@@ -38,7 +42,8 @@ export default {
   name: 'KonvaCurveTest',
   components: {
     CircleDragLayer,
-    PathLayer
+    PathLayer,
+    ClosedPath
   },
   data() {
     return {
@@ -47,16 +52,21 @@ export default {
         height: height
       },
       list: [0, 0, 100, 0, 100, 100],
-      draggablePoints: [],
-      shape: [],
       objects: [],
+      draggablePoints: [],
       points: [],
       collectedDrawPoints: [],
       nextPointDir: [],
       //canvas: document.createElement('canvas'),
       isPaint: Boolean,
-      paths: [],
-      selectedPath: -1
+      currentPath: "",
+      selectedPathId: -1,
+      pathConfig: { tension: 0.5, closed: false, stroke: 'black',
+          fill: 'brown',
+          fillLinearGradientStartPoint: { x: -50, y: -50 },
+          fillLinearGradientEndPoint: { x: 50, y: 50 },
+          fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
+        }
 
       
 
@@ -84,7 +94,6 @@ export default {
   },
   beforeMount() {
     this.isPaint = false;
-    this.paths = []
 
   },
   methods: {
@@ -208,7 +217,7 @@ export default {
       return false;
     },
     addPoint(e, x, y) {
-      //this.shape.push( {x: x, y: y} )
+
       this.nextPointDir = []
 
       this.draggablePoints.push({
@@ -231,8 +240,8 @@ export default {
         }
       });
 
-      this.points.push(this.draggablePoints[this.draggablePoints.length-1].x)
-      this.points.push(this.draggablePoints[this.draggablePoints.length-1].y)
+      this.points.push(x)
+      this.points.push(y)
 
     },
     updatePoint(circleId, x, y) {
@@ -248,14 +257,15 @@ export default {
       for (var i = 0; i < arrayLength; ++i) {
         tmpShape.push( {x: tmpPoints[i*2], y: tmpPoints[i*2 +1] })
       }
-      if (this.selectedPath >= 0) {
-        this.paths[this.selectedPath] = toPath(tmpShape)
-        // update in ugly reactive way
-        this.paths.push("")
-        this.paths.pop()
-      }
+
+      this.currentPath = toPath(tmpShape)
+
+
     },
     updatePathFromCircle(e) {
+      console.log("drag end with seleced path id:")
+      console.log(this.selectedPathId)
+
       if (e.target.VueComponent == null || e.target.attrs.x == null) {
         return 
       }
@@ -264,11 +274,12 @@ export default {
       this.updateCurve()
     },
     mouseMove(e) {
-      this.updatePathFromCircle(e)
+      
       
       if (this.isPaint == false) {
         return
       }
+
       var x = e.evt.offsetX
       var y = e.evt.offsetY
       this.collectedDrawPoints.push([x,y])
@@ -283,53 +294,67 @@ export default {
       //console.log(this.paths)
     },
     mouseDown(e) {
-
+      console.log("Mouse Down")
       if (e.target.nodeType != "Stage") {
         return
       }
-
-
-      if (this.points.length > 3) {
-        // save the last points list
-        this.objects.push(this.points)
-      }
-      else {
-        this.paths.pop()
-        this.selectedPath = -1
-      }
+      console.log("Start drawing")
       // push the next path to be drawn
-      this.paths.push("")
-      this.selectedPath = this.paths.length - 1
-
+      this.clearCurrentTempPath()
+      this.selectedPathId = -1
 
       this.isPaint = true;
       var x = e.evt.offsetX
       var y = e.evt.offsetY
-      this.shape = []
-      // Clear current shape
-      this.points = []
-      this.draggablePoints = []
-      
 
       this.addPoint(e, x, y)
       
 
     },
-    mouseUp(e) {
-      this.isPaint = false;
-      this.collectedDrawPoints = []
-
+    clearCurrentTempPath() {
+      //this.currentPath = ""
+      this.draggablePoints = []
+      this.points = []
     },
-    createCircles() {
+    mouseUp(e) {
+      
+      this.collectedDrawPoints = []
+      console.log(this.selectedPathId)
+      if (this.points.length > 3 && this.selectedPathId < 0) {
+        // save the last points list
+        this.objects.push( { draggablePoints: this.draggablePoints.slice(), points: this.points.slice(), path: this.currentPath.slice()})
+      }
+      if (this.selectedPathId >= 0) {
+        this.updateCurve()
+        this.objects[this.selectedPathId].points = this.points.slice()
+        this.objects[this.selectedPathId].path = this.currentPath.slice()
+        this.objects[this.selectedPathId].draggablePoints = this.draggablePoints.slice()
 
+      }
+      if (this.isPaint == true) {
+        this.clearCurrentTempPath()
+      }
+      this.isPaint = false;
+
+      
+      console.log(this.objects)
     },
     selectPath(e) {
       console.log(e.target)
+      console.log("Selecting path")
       if (e.target.VueComponent == null) {
+              console.log("None")
         return 
+
+
       }
-      this.selectedPath = e.target.VueComponent.$parent.pathId
-      console.log(this.selectedPath)
+      this.selectedPathId = e.target.VueComponent.$parent.pathId
+      console.log(this.selectedPathId)
+      console.log(this.objects[this.selectedPathId])
+      this.draggablePoints = this.objects[this.selectedPathId].draggablePoints
+      this.points = this.objects[this.selectedPathId].points
+      this.currentPath = this.objects[this.selectedPathId].path
+
     },
     handleDragstart(e) {
       const shape = e.target;

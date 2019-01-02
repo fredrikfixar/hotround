@@ -2,15 +2,10 @@
   
       <v-layer  ref="drawLayer">
         <ClosedPath 
-          v-for="(p, index) in paths"
-          :path="p"
+          v-for="(o, index) in objects"
+          :path="o.path"
           :pathId="index"
-          :config="{ tension: 0.5, closed: false, stroke: 'black',
-          fill: 'pink',
-          fillLinearGradientStartPoint: { x: -50, y: -50 },
-          fillLinearGradientEndPoint: { x: 50, y: 50 },
-          fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
-        }"></ClosedPath>
+          :config="pathConfig"></ClosedPath>
       </v-layer>
 
 </template>
@@ -30,7 +25,8 @@ export default {
     };
   },
   props: {
-     paths: Array
+     objects: Array,
+     pathConfig: {}
   },
   computed: {
 
