@@ -7,7 +7,7 @@
       <!-- <v-layer ref="drawLayer">
         <ClosedPath :path="currentPath" :pathId="selectedPathId" :config="pathConfig" :updateVar="updateVar" />
       </v-layer> -->
-      <PathLayer :objects="objects" :pathConfig="pathConfig" :key="updateVar"/>
+      <PathLayer :objects="objects" :pathConfig="pathConfig" />
 
       <v-layer ref="lineLayer">
         <v-line v-bind:points="pathPoints" :config="{
@@ -22,7 +22,7 @@
         }"/>
 
       </v-layer>
-      <CircleDragLayer :draggablePoints="draggablePoints" />
+      <CircleDragLayer :draggablePoints="draggablePoints"  :key="updateVar"/>
 
 
     </v-stage>
@@ -323,14 +323,13 @@ export default {
         // save the last points list
         this.objects.push( { draggablePoints: this.draggablePoints, points: this.points, path: this.currentPath})
       }
+      console.log(e)
       if (this.selectedPathId >= 0) {
         if (e.target.VueComponent != null && e.target.attrs.x != null) {
-          console.log("update point for path:")
-          console.log(this.selectedPathId)
+          console.log(e)
           this.updatePoint(e.target.VueComponent.$parent.circleId,e.target.attrs.x, e.target.attrs.y)
           //Updating the last path
           this.updateCurve()
-          console.log("copy current path to store")
           // this.objects[this.selectedPathId].points = this.points.slice()
           this.objects[this.selectedPathId].path = this.currentPath.slice()
           // this.objects[this.selectedPathId].draggablePoints = this.draggablePoints.slice()
@@ -346,17 +345,14 @@ export default {
       console.log(this.objects)
     },
     selectPath(e) {
-      console.log(e.target)
-      console.log("Selecting path")
+
       if (e.target.VueComponent == null) {
-              console.log("None")
         return 
 
 
       }
       this.selectedPathId = e.target.VueComponent.$parent.pathId
-      console.log(this.selectedPathId)
-      console.log(this.objects[this.selectedPathId])
+
       this.draggablePoints = this.objects[this.selectedPathId].draggablePoints
       this.points = this.objects[this.selectedPathId].points
       this.currentPath = this.objects[this.selectedPathId].path

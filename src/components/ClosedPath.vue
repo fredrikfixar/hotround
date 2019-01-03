@@ -26,7 +26,6 @@ export default {
   },
   computed: {
     computedPath: function() {
-      console.log(this.path)
       return this.path
     }
   },

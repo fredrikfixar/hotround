@@ -1,12 +1,10 @@
 <template>
-  <v-layer :zIndex="1" ref="layer">
+  <v-layer ref="layer">
     <DragCircle
       v-for="(item, index) in draggablePoints"
-      :key="item.id"
       :circleId="index"
       :x="item.x"
       :y="item.y"
-
       :circleData="item.circleData"></DragCircle>
   </v-layer>
 </template>

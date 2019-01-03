@@ -1,12 +1,12 @@
 <template>
   
-      <v-layer :zIndex=0 ref="drawLayer">
+      <v-layer  ref="drawLayer">
         <ClosedPath 
           v-for="(o, index) in objects"
           :path="o.path"
           :pathId="index"
           :config="pathConfig"
-          
+          :zIndex=0
           :key="index">
           </ClosedPath>
       </v-layer>

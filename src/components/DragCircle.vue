@@ -2,9 +2,7 @@
     <v-circle
       :x="x"
       :y="y"
-      :zIndex=1
       :config="circleData">
-      :key="x"
       </v-circle>
 
 </template>
