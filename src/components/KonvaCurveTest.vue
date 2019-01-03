@@ -64,7 +64,7 @@ export default {
       selectedPathId: -1,
       updateVar: 0,
       pathConfig: { tension: 0.5, closed: false, stroke: 'black',
-          fill: 'brown',
+          fill: 'purple',
           fillLinearGradientStartPoint: { x: -50, y: -50 },
           fillLinearGradientEndPoint: { x: 50, y: 50 },
           fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
@@ -296,6 +296,7 @@ export default {
       }
       
       this.updateCurve()
+      e.evt.preventDefault()
       //console.log(this.paths)
     },
     mouseDown(e) {
