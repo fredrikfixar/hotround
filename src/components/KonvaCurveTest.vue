@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-stage @click="selectPath" @mousedown="mouseDown" @mouseup="mouseUp" @mousemove="mouseMove"  ref="stage"
+    <v-stage @tap="selectPath" @click="selectPath" @touchstart="mouseDown" @touchmove="mouseMove" @mousedown="mouseDown" @touchend="mouseUp" @mouseup="mouseUp" @mousemove="mouseMove"  ref="stage"
       :config="configKonva"
       >
       
@@ -278,9 +278,15 @@ export default {
       if (this.isPaint == false) {
         return
       }
-
+      console.log(e)
       var x = e.evt.offsetX
       var y = e.evt.offsetY
+
+      if (e.evt.offsetX == null) {
+        x = e.evt.changedTouches[0].clientX
+        y = e.evt.changedTouches[0].clientY
+      }
+
       this.collectedDrawPoints.push([x,y])
 
       if (this.verifyLastDrawPoint()) {
@@ -305,6 +311,11 @@ export default {
       this.isPaint = true;
       var x = e.evt.offsetX
       var y = e.evt.offsetY
+      //we catch touch event pos
+      if (e.evt.offsetX == null) {
+        x = e.evt.changedTouches[0].clientX
+        y = e.evt.changedTouches[0].clientY
+      }
 
       this.addPoint(e, x, y)
       
