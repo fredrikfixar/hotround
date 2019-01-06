@@ -4,9 +4,9 @@
       :config="configKonva"
       >
       
-      <!-- <v-layer ref="drawLayer">
-        <ClosedPath :path="currentPath" :pathId="selectedPathId" :config="pathConfig" :updateVar="updateVar" />
-      </v-layer> -->
+      <v-layer ref="drawLayer">
+        <ClosedPath :path="currentPath" :pathId="selectedPathId" :config="pathConfig" :updateVar="updateVar" :key="currentPath" />
+      </v-layer>
       <PathLayer :objects="objects" :pathConfig="pathConfig" />
 
       <v-layer ref="lineLayer">
@@ -15,7 +15,7 @@
           y: 200,
           tension: 0.5,
           closed: true,
-          stroke: 'black',
+          stroke: 'red',
           fillLinearGradientStartPoint: { x: -50, y: -50 },
           fillLinearGradientEndPoint: { x: 50, y: 50 },
           fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
@@ -64,7 +64,7 @@ export default {
       selectedPathId: -1,
       updateVar: 0,
       pathConfig: { tension: 0.5, closed: false, stroke: 'black',
-          fill: 'purple',
+          fill: 'red',
           fillLinearGradientStartPoint: { x: -50, y: -50 },
           fillLinearGradientEndPoint: { x: 50, y: 50 },
           fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
