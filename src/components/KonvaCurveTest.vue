@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-stage @tap="selectPath" @click="selectPath" @touchstart="mouseDown" @touchmove="mouseMove" @mousedown="mouseDown" @touchend="mouseUp" @mouseup="mouseUp" @mousemove="mouseMove"  ref="stage"
+    <v-stage @touchstart="mouseDown" @touchmove="mouseMove" @mousedown="mouseDown" @touchend="mouseUp" @mouseup="mouseUp" @mousemove="mouseMove"  ref="stage"
       :config="configKonva"
       >
       
@@ -301,7 +301,7 @@ export default {
     },
     mouseDown(e) {
       console.log("Mouse Down")
-      if (e.target.nodeType != "Stage") {
+      if (e.target.className == "Circle") {
         return
       }
       console.log("Start drawing")
@@ -330,14 +330,19 @@ export default {
     mouseUp(e) {
       console.log("Mouse up")
       this.collectedDrawPoints = []
-      console.log(this.selectedPathId)
-      if (this.points.length > 3 && this.selectedPathId < 0) {
+
+      if ( this.drawingPointsCollected() ) {
         // save the last points list
         this.objects.push( { draggablePoints: this.draggablePoints, points: this.points, path: this.currentPath})
+        console.log("Clearing current path")
+        this.clearCurrentTempPath()
       }
-      console.log(e)
-      if (this.selectedPathId >= 0) {
-        if (e.target.VueComponent != null && e.target.attrs.x != null) {
+      else {
+        if (e.target.className != "Circle") {
+          console.log("Trying to select path")
+          this.selectPath(e)
+        }
+        if (e.target.VueComponent != null && e.target.attrs.x != null && e.target.VueComponent.$parent.circleId != null ) {
           console.log(e)
           this.updatePoint(e.target.VueComponent.$parent.circleId,e.target.attrs.x, e.target.attrs.y)
           //Updating the last path
@@ -348,21 +353,25 @@ export default {
           this.updateVar = this.updateVar + 1
         }
       }
-      if (this.isPaint == true) {
-        this.clearCurrentTempPath()
-      }
+
       this.isPaint = false;
 
-      
+      console.log("Not painting any more")
       console.log(this.objects)
+    },
+    drawingPointsCollected() {
+      return (this.isPaint == true && this.points.length > 3)
     },
     selectPath(e) {
 
       if (e.target.VueComponent == null) {
         return 
-
-
       }
+
+      if (this.drawingPointsCollected()) {
+        return
+      }
+      console.log(e.target.VueComponent.$parent.pathId)
       this.selectedPathId = e.target.VueComponent.$parent.pathId
 
       this.draggablePoints = this.objects[this.selectedPathId].draggablePoints
