@@ -3,7 +3,6 @@
     
     :data="computedPath"
     :config="config"
-    :key="path"
 
     ></v-path>
 

@@ -7,7 +7,7 @@
           :pathId="index"
           :config="pathConfig"
           :zIndex=0
-          :key="index">
+          :key="o.path">
           </ClosedPath>
       </v-layer>
 

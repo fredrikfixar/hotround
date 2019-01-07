@@ -5,9 +5,9 @@
       >
       
       <v-layer ref="drawLayer">
-        <ClosedPath :path="currentPath" :pathId="selectedPathId" :config="pathConfig" :updateVar="updateVar" :key="currentPath" />
+        <ClosedPath :path="currentPath" :pathId="selectedPathId" :config="pathConfig"/>
       </v-layer>
-      <PathLayer :objects="objects" :pathConfig="pathConfig" />
+      <PathLayer :objects="objects" :pathConfig="pathConfig"/>
 
       <v-layer ref="lineLayer">
         <v-line v-bind:points="pathPoints" :config="{
@@ -62,7 +62,10 @@ export default {
       isPaint: Boolean,
       currentPath: "",
       selectedPathId: -1,
+      componentMoveOffsetX: 0,
+      componentMoveOffsetY: 0,
       updateVar: 0,
+      pathChanged: 0,
       pathConfig: { tension: 0.5, closed: false, stroke: 'black',
           fill: 'red',
           fillLinearGradientStartPoint: { x: -50, y: -50 },
@@ -86,6 +89,9 @@ export default {
     },
     windowHeigth: function () {
       return this.configKonva.height
+    },
+    pathDirty: function () {
+      return this.pathChanged
     }
     // image: function () {
     //   return document.getElementById("drawImage")
@@ -247,12 +253,14 @@ export default {
 
     },
     updatePoint(circleId, x, y) {
+      console.log("Update point")
       console.log(this.points[circleId*2])
       console.log(x)
       this.points[circleId*2] = x
       this.points[circleId*2 + 1] = y
       this.draggablePoints[circleId].x = x
       this.draggablePoints[circleId].y = y
+      this.pathChanged = this.pathChanged + 1
     },
     updateCurve() {
       var tmpPoints = getCurvePoints(this.points,0.5, 25, true)
@@ -275,35 +283,65 @@ export default {
     mouseMove(e) {
       
       
-      if (this.isPaint == false) {
+      if (this.isPaint == false && this.selectedPathId == -1) {
         return
       }
-      console.log(e)
+
       var x = e.evt.offsetX
       var y = e.evt.offsetY
-
       if (e.evt.offsetX == null) {
         x = e.evt.changedTouches[0].clientX
         y = e.evt.changedTouches[0].clientY
       }
+      if (this.selectedPathId == -1) {
+        console.log(e)
 
-      this.collectedDrawPoints.push([x,y])
 
-      if (this.verifyLastDrawPoint()) {
-        this.addPoint(e, x, y)
+
+        this.collectedDrawPoints.push([x,y])
+
+        if (this.verifyLastDrawPoint()) {
+          this.addPoint(e, x, y)
+          
+          this.collectedDrawPoints = []
+        }
         
-        this.collectedDrawPoints = []
+        this.updateCurve()
       }
-      
-      this.updateCurve()
+      else if (e.target.className != "Circle"){
+        var dx = x - this.componentMoveOffsetX
+        var dy = y - this.componentMoveOffsetY
+        console.log(this.draggablePoints)
+        for (var i = 0; i < this.draggablePoints.length; i++) {
+          this.updatePoint(i, this.draggablePoints[i].x + dx, this.draggablePoints[i].y + dy)
+        }
+        this.updateCurve()
+        this.componentMoveOffsetX = x
+        this.componentMoveOffsetY = y
+        this.pathChanged = this.pathChanged + 1
+      }
+
       e.evt.preventDefault()
       //console.log(this.paths)
     },
     mouseDown(e) {
       console.log("Mouse Down")
       if (e.target.className == "Circle") {
+        //exit if hit circle
         return
       }
+
+      if (e.target.VueComponent != null && e.target.VueComponent.$parent.pathId == this.selectedPathId ) {
+        //exit if we hit the already selected path
+        this.componentMoveOffsetX = e.evt.offsetX
+        this.componentMoveOffsetY = e.evt.offsetY
+        if (e.evt.offsetX == null) {
+          this.componentMoveOffsetX = e.evt.changedTouches[0].clientX
+          this.componentMoveOffsetY = e.evt.changedTouches[0].clientY
+        }
+        return    
+      }
+
       console.log("Start drawing")
       // push the next path to be drawn
       this.clearCurrentTempPath()
@@ -319,7 +357,7 @@ export default {
       }
 
       this.addPoint(e, x, y)
-      
+      this.pathChanged = 0
 
     },
     clearCurrentTempPath() {
@@ -338,19 +376,25 @@ export default {
         this.clearCurrentTempPath()
       }
       else {
-        if (e.target.className != "Circle") {
+        if (e.target.className != "Circle" && this.selectedPathId < 0) {
           console.log("Trying to select path")
           this.selectPath(e)
         }
         if (e.target.VueComponent != null && e.target.attrs.x != null && e.target.VueComponent.$parent.circleId != null ) {
           console.log(e)
+          console.log("Update point and path after circle move")
           this.updatePoint(e.target.VueComponent.$parent.circleId,e.target.attrs.x, e.target.attrs.y)
           //Updating the last path
           this.updateCurve()
-          // this.objects[this.selectedPathId].points = this.points.slice()
-          this.objects[this.selectedPathId].path = this.currentPath.slice()
-          // this.objects[this.selectedPathId].draggablePoints = this.draggablePoints.slice()
+        }
+
+        if (this.selectedPathId >= 0) {
+          this.objects[this.selectedPathId].points = this.points
+          this.objects[this.selectedPathId].path = this.currentPath
+          this.objects[this.selectedPathId].draggablePoints = this.draggablePoints
+          console.log("Here we should update the drawn path")
           this.updateVar = this.updateVar + 1
+          this.pathChanged = this.pathChanged + 1
         }
       }
 
@@ -371,10 +415,13 @@ export default {
       if (this.drawingPointsCollected()) {
         return
       }
+      console.log("Select path")
       console.log(e.target.VueComponent.$parent.pathId)
       this.selectedPathId = e.target.VueComponent.$parent.pathId
 
       this.draggablePoints = this.objects[this.selectedPathId].draggablePoints
+      console.log(this.objects[this.selectedPathId].draggablePoints) 
+      console.log(this.draggablePoints) 
       this.points = this.objects[this.selectedPathId].points
       this.currentPath = this.objects[this.selectedPathId].path
 
