@@ -60,6 +60,7 @@ export default {
       nextPointDir: [],
       //canvas: document.createElement('canvas'),
       isPaint: Boolean,
+      isMouseDown: false,
       currentPath: "",
       selectedPathId: -1,
       componentMoveOffsetX: 0,
@@ -179,11 +180,17 @@ export default {
     },
     verifyLastDrawPoint() {
       const numCollectedPoints = this.collectedDrawPoints.length
-      if ( numCollectedPoints < 5 ) {
+      const pointsLength = this.points.length
+      if ( numCollectedPoints < 5) {
+        if (numCollectedPoints == 4 && pointsLength == 0 ) {
+          // If we have no added point, we use the 4th point collected
+          // (we may move 3 pixles and still can select whatever we do mouseup at)
+          return true
+        }
         return false
       }
       var width = this.windowWidth;  
-      const pointsLength = this.points.length
+      
       // // uAxis is local coordinate system x-axis
       // var uAxis = [0,0];
       // uAxis[0] = this.collectedDrawPoints[numCollectedPoints-1][0] - this.points[pointsLength-2];
@@ -225,7 +232,7 @@ export default {
       return false;
     },
     addPoint(e, x, y) {
-
+      console.log("Adding point")
       this.nextPointDir = []
 
       this.draggablePoints.push({
@@ -289,9 +296,10 @@ export default {
 
       var x = e.evt.offsetX
       var y = e.evt.offsetY
-      if (e.evt.offsetX == null) {
-        x = e.evt.changedTouches[0].clientX
-        y = e.evt.changedTouches[0].clientY
+      if (x == null) {
+        console.log(e)
+        x = e.currentTarget.pointerPos.x
+        y = e.currentTarget.pointerPos.y
       }
       if (this.selectedPathId == -1) {
         console.log(e)
@@ -308,7 +316,7 @@ export default {
         
         this.updateCurve()
       }
-      else if (e.target.className != "Circle"){
+      else if (e.target.className != "Circle" && this.isMouseDown){
         var dx = x - this.componentMoveOffsetX
         var dy = y - this.componentMoveOffsetY
         console.log(this.draggablePoints)
@@ -326,6 +334,8 @@ export default {
     },
     mouseDown(e) {
       console.log("Mouse Down")
+      this.isMouseDown = true
+
       if (e.target.className == "Circle") {
         //exit if hit circle
         return
@@ -333,11 +343,13 @@ export default {
 
       if (e.target.VueComponent != null && e.target.VueComponent.$parent.pathId == this.selectedPathId ) {
         //exit if we hit the already selected path
-        this.componentMoveOffsetX = e.evt.offsetX
+        this.componentMoveOffsetX  = e.evt.offsetX
         this.componentMoveOffsetY = e.evt.offsetY
-        if (e.evt.offsetX == null) {
-          this.componentMoveOffsetX = e.evt.changedTouches[0].clientX
-          this.componentMoveOffsetY = e.evt.changedTouches[0].clientY
+        if (this.componentMoveOffsetX == null) {
+          console.log("using touch data")
+          console.log(e.evt)
+          this.componentMoveOffsetX = e.currentTarget.pointerPos.x
+          this.componentMoveOffsetY = e.currentTarget.pointerPos.y
         }
         return    
       }
@@ -348,15 +360,16 @@ export default {
       this.selectedPathId = -1
 
       this.isPaint = true;
-      var x = e.evt.offsetX
-      var y = e.evt.offsetY
-      //we catch touch event pos
-      if (e.evt.offsetX == null) {
-        x = e.evt.changedTouches[0].clientX
-        y = e.evt.changedTouches[0].clientY
-      }
+      // var x = e.evt.offsetX
+      // var y = e.evt.offsetY
+      // //we catch touch event pos
+      // if (e.evt.offsetX == null) {
+      //   console.log(e.evt.changedTouches[0])
+      //   x = e.evt.changedTouches[0].screenX
+      //   y = e.evt.changedTouches[0].screenY
+      // }
 
-      this.addPoint(e, x, y)
+      //this.addPoint(e, x, y)
       this.pathChanged = 0
 
     },
@@ -367,6 +380,7 @@ export default {
     },
     mouseUp(e) {
       console.log("Mouse up")
+      this.isMouseDown = false
       this.collectedDrawPoints = []
 
       if ( this.drawingPointsCollected() ) {
@@ -380,10 +394,17 @@ export default {
           console.log("Trying to select path")
           this.selectPath(e)
         }
-        if (e.target.VueComponent != null && e.target.attrs.x != null && e.target.VueComponent.$parent.circleId != null ) {
+        var x = e.evt.offsetX
+        var y = e.evt.offsetY
+        if (x == null) {
+          console.log(e)
+          x = e.currentTarget.pointerPos.x
+          y = e.currentTarget.pointerPos.y
+        }
+        if (e.target.VueComponent != null && x != null && e.target.VueComponent.$parent.circleId != null ) {
           console.log(e)
           console.log("Update point and path after circle move")
-          this.updatePoint(e.target.VueComponent.$parent.circleId,e.target.attrs.x, e.target.attrs.y)
+          this.updatePoint(e.target.VueComponent.$parent.circleId,x, y)
           //Updating the last path
           this.updateCurve()
         }
