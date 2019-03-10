@@ -1,5 +1,6 @@
 <template>
   <div>
+    <Anne/>
     <v-stage @touchstart="mouseDown" @touchmove="mouseMove" @mousedown="mouseDown" @touchend="mouseUp" @mouseup="mouseUp" @mousemove="mouseMove"  ref="stage"
       :config="configKonva"
       >
@@ -30,6 +31,7 @@
 </template>
 
 <script>
+import Anne from './ApolloExample.vue'
 import {toPath} from 'svg-points'
 import {getCurvePoints} from 'cardinal-spline-js'
 import CircleDragLayer from './CircleDragLayer.vue'
@@ -44,7 +46,8 @@ export default {
   components: {
     CircleDragLayer,
     PathLayer,
-    ClosedPath
+    ClosedPath,
+    Anne
   },
   data() {
     return {

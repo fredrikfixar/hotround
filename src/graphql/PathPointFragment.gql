@@ -1,0 +1,5 @@
+fragment PathPoint on PathPoint {
+  id
+  floatX
+  floatY
+}

@@ -1,0 +1,7 @@
+#import "./PathPointFragment.gql"
+
+mutation addPathPoint ($input: PathPointInput!) {
+  addPathPoint (input: $input) {
+    ...PathPoint
+  }
+}

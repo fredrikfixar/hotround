@@ -1,0 +1,7 @@
+#import "./PathPointFragment.gql"
+
+query ClosedPath {
+  ClosedPath {
+    ...PathPoint
+  }
+}
